@@ -1,17 +1,29 @@
-/* eslint-disable import/no-duplicates */
 import express from 'express'
 import path from 'path'
 import cors from 'cors'
 import bodyParser from 'body-parser'
 import sockjs from 'sockjs'
 import axios from 'axios'
+import { renderToStaticNodeStream } from 'react-dom/server'
+import React from 'react'
 
 import cookieParser from 'cookie-parser'
+import config from './config'
+
 import Html from '../client/html'
+
+let Root = () => ''
+
+try {
+  // eslint-disable-next-line import/no-unresolved
+  Root = require('../dist/assets/js/root.bundle')
+} catch (ex) {
+  console.log(' run yarn build:prod to enable ssr')
+}
 
 let connections = []
 
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 8090
 const server = express()
 
 const { readFile, writeFile, unlink } = require('fs').promises
@@ -46,11 +58,17 @@ server.use(cors())
 server.use(express.static(path.resolve(__dirname, '../dist/assets')))
 server.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }))
 server.use(bodyParser.json({ limit: '50mb', extended: true }))
+const middleware = [
+  cors(),
+  express.static(path.resolve(__dirname, '../dist/assets')),
+  bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }),
+  bodyParser.json({ limit: '50mb', extended: true }),
+  cookieParser()
+]
 
-server.use(cookieParser())
+middleware.forEach((it) => server.use(it))
 
 server.get('/api/v1/users', async (req, res) => {
-  
   const users = await readFiles()
   console.log(users)
   res.json(users)
@@ -59,7 +77,7 @@ server.get('/api/v1/users', async (req, res) => {
 server.post('/api/v1/users', async (req, res) => {
   const array = await readFiles()
   const addUser = req.body
-  const newArr = [...array, {...addUser, id:array[array.length - 1].id + 1}]
+  const newArr = [...array, { ...addUser, id: array[array.length - 1].id + 1 }]
   await saveFiles(newArr)
   res.json({ status: 'success', id: addUser.id })
 })
@@ -68,7 +86,7 @@ server.patch('/api/v1/users/:userId', async (req, res) => {
   const { userId } = req.params
   const bodyUser = req.body
 
-  await saveFiles(users.map((item) => (item.id === +userId ? {...item, ...bodyUser} : item)))
+  await saveFiles(users.map((item) => (item.id === +userId ? { ...item, ...bodyUser } : item)))
   res.json({ status: 'success', id: userId })
 })
 server.delete('/api/v1/users', async (req, res) => {
@@ -83,30 +101,37 @@ server.delete('/api/v1/users/:userId', async (req, res) => {
   return res.json({ status: 'success', id: userId })
 })
 
+server.get('/:userName', async (req, res) => {
+  const { userName } = req.params
+  const { data: listOfUser } = await axios(`https://api.github.com/users/${userName}/repos`)
+  res.json(listOfUser)
+})
+server.get('/:userName/:userRepository', async (req, res) => {
+  const { userName, userRepository } = req.params
+  const { data: repository } = await axios(
+    `https://api.github.com/repos/${userName}/${userRepository}`
+  )
+  res.json(repository)
+})
+
 server.use('/api/', (req, res) => {
   res.status(404)
   res.end()
 })
 
-const echo = sockjs.createServer()
-echo.on('connection', (conn) => {
-  connections.push(conn)
-  conn.on('data', async () => {})
-
-  conn.on('close', () => {
-    connections = connections.filter((c) => c.readyState !== 3)
-  })
-})
+const [htmlStart, htmlEnd] = Html({
+  body: 'separator',
+  title: 'Skillcrucial - Become an IT HERO'
+}).split('separator')
 
 server.get('/', (req, res) => {
-  // const body = renderToString(<Root />);
-  const title = 'Server side Rendering'
-  res.send(
-    Html({
-      body: '',
-      title
-    })
-  )
+  const appStream = renderToStaticNodeStream(<Root location={req.url} context={{}} />)
+  res.write(htmlStart)
+  appStream.pipe(res, { end: false })
+  appStream.on('end', () => {
+    res.write(htmlEnd)
+    res.end()
+  })
 })
 
 server.get('/*', (req, res) => {
@@ -124,7 +149,16 @@ server.get('/*', (req, res) => {
 
 const app = server.listen(port)
 
-echo.installHandlers(app, { prefix: '/ws' })
+if (config.isSocketsEnabled) {
+  const echo = sockjs.createServer()
+  echo.on('connection', (conn) => {
+    connections.push(conn)
+    conn.on('data', async () => {})
 
-// eslint-disable-next-line no-console
+    conn.on('close', () => {
+      connections = connections.filter((c) => c.readyState !== 3)
+    })
+  })
+  echo.installHandlers(app, { prefix: '/ws' })
+}
 console.log(`Serving at http://localhost:${port}`)

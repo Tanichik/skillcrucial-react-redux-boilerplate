@@ -13,6 +13,7 @@ import DummyView from '../components/dummy-view'
 import NotFound from '../components/404'
 
 import Startup from './startup'
+// import ListOfRepository from '../components/list-of-repository'
 
 const OnlyAnonymousRoute = ({ component: Component, ...rest }) => {
   const func = (props) =>
@@ -76,13 +77,15 @@ const PrivateRouteConnected = connect(mapStateToProps, mapDispatchToProps)(Priva
 const mapDispatchToPropsStartup = (dispatch) => bindActionCreators({}, dispatch)
 
 const StartupConnected = withRouter(connect(() => ({}), mapDispatchToPropsStartup)(Startup))
-export default (props) => {
+const Root = (props) => {
   return (
     <Provider store={store}>
       <ConnectedRouter history={history} location={props.location} context={props.context}>
         <StartupConnected>
           <Switch>
-            <Route exact path="/" component={() => <DummyView />} />
+            <Route exact path="/" component={() => <Home />} />
+            <Route exact path="/:userName" component={() => <Home />} />
+            <Route exact path="/:userName/:userRepository" component={() => <Home/>} />
             <Route exact path="/dashboard" component={() => <Home />} />
             <PrivateRouteConnected exact path="/hidden-route" component={() => <DummyView />} />
             <Route component={() => <NotFound />} />
@@ -92,3 +95,4 @@ export default (props) => {
     </Provider>
   )
 }
+export default Root
