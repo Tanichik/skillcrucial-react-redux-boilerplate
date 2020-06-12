@@ -55,9 +55,10 @@ server.use(setHeaders)
 
 server.use(cors())
 
-server.use(express.static(path.resolve(__dirname, '../dist/assets')))
-server.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }))
-server.use(bodyParser.json({ limit: '50mb', extended: true }))
+// server.use(express.static(path.resolve(__dirname, '../dist/assets')))
+// server.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }))
+// server.use(bodyParser.json({ limit: '50mb', extended: true }))
+
 const middleware = [
   cors(),
   express.static(path.resolve(__dirname, '../dist/assets')),
