@@ -12,14 +12,14 @@ import config from './config'
 
 import Html from '../client/html'
 
-let Root = () => ''
+ const Root = () => ''
 
-try {
-  // eslint-disable-next-line import/no-unresolved
-  Root = require('../dist/assets/js/root.bundle')
-} catch (ex) {
-  console.log(' run yarn build:prod to enable ssr')
-}
+// try {
+//   // eslint-disable-next-line import/no-unresolved
+//   Root = require('../dist/assets/js/root.bundle')
+// } catch (ex) {
+//   console.log(' run yarn build:prod to enable ssr')
+// }
 
 let connections = []
 
