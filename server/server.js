@@ -12,7 +12,7 @@ import config from './config'
 
 import Html from '../client/html'
 
- const Root = () => ''
+const Root = () => ''
 
 // try {
 //   // eslint-disable-next-line import/no-unresolved
@@ -102,12 +102,12 @@ middleware.forEach((it) => server.use(it))
 //   return res.json({ status: 'success', id: userId })
 // })
 
-server.get('/:userName', async (req, res) => {
+server.get('/api/:userName', async (req, res) => {
   const { userName } = req.params
   const { data: listOfUser } = await axios(`https://api.github.com/users/${userName}/repos`)
   res.json(listOfUser)
 })
-server.get('/:userName/:userRepository', async (req, res) => {
+server.get('/api/:userName/:userRepository', async (req, res) => {
   const { userName, userRepository } = req.params
   const { data: repository } = await axios(
     `https://api.github.com/repos/${userName}/${userRepository}`
