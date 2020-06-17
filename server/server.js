@@ -3,7 +3,7 @@ import path from 'path'
 import cors from 'cors'
 import bodyParser from 'body-parser'
 import sockjs from 'sockjs'
-import axios from 'axios'
+
 import { renderToStaticNodeStream } from 'react-dom/server'
 import React from 'react'
 
@@ -102,18 +102,6 @@ middleware.forEach((it) => server.use(it))
 //   return res.json({ status: 'success', id: userId })
 // })
 
-server.get('/api/:userName', async (req, res) => {
-  const { userName } = req.params
-  const { data: listOfUser } = await axios(`https://api.github.com/users/${userName}/repos`)
-  res.json(listOfUser)
-})
-server.get('/api/:userName/:userRepository', async (req, res) => {
-  const { userName, userRepository } = req.params
-  const { data: repository } = await axios(
-    `https://api.github.com/repos/${userName}/${userRepository}`
-  )
-  res.json(repository)
-})
 
 server.use('/api/', (req, res) => {
   res.status(404)
